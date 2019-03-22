@@ -1,0 +1,298 @@
+version: "2.1"
+
+services: 
+  configserver:
+   image: config-service:latest
+   build: config-server/
+   restart: always
+   network_mode: host
+   ports:
+    - 8077:8077
+   healthcheck:
+    test: "exit 0"
+
+  eurekaserver: 
+   build: eureka-server/
+   image: eureka-service:latest
+   network_mode: host
+   depends_on:
+    configserver:
+     condition: service_healthy
+   ports: 
+    - 8010:8010
+   restart: always
+   healthcheck:
+    test: "exit 0"
+
+  apigateway: 
+   build: zuul-gatewayservice/
+   depends_on: 
+    eurekaserver:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+   image: zuul-service:latest
+   network_mode: host
+   ports: 
+    - 8095:8095
+   restart: always
+   healthcheck:
+    test: "exit 0"
+
+  mongo: 
+   container_name: mongo_docker
+   hostname: localhost
+   image: mongo:3.4-jessie
+   network_mode: host
+   ports: 
+    - 27017:27017
+   restart: always
+   volumes: 
+    - ./data/db:/data/db
+   healthcheck:
+    test: "exit 0"
+
+  influxdb:
+   image: influxdb:latest
+   container_name: influxdb
+   ports:
+    - 8086:8086
+   volumes:
+    - /opt/appdata/influxdb:/var/lib/influxdb
+   restart:
+    always
+   healthcheck:
+    test: "exit 0"
+
+  mysqldb:
+   image: mysql
+   restart: always
+   environment:
+    MYSQL_ROOT_PASSWORD: root123
+   ports:
+    - 3306:3306
+   network_mode: host
+   hostname: localhost
+   container_name: mysql_docker
+   volumes:
+    - data:/var/lib/mysql
+   healthcheck:
+    test: "exit 0"
+
+  app-registration: 
+   build: AppRegistration/
+   container_name: appregistration_docker
+   depends_on: 
+    mongo:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+   image: appregistration:latest
+   network_mode: host
+   ports: 
+    - 8088:8088
+   restart: always
+   healthcheck:
+    test: "exit 0"
+     
+  user-service:
+   build: userservice/
+   container_name: userservice_docker
+   depends_on: 
+    mongo:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+   image: userservice:latest
+   network_mode: host
+   ports: 
+    - 8096:8096
+   restart: always
+   healthcheck:
+    test: "exit 0"
+
+  alert-service:
+   build: SysCopAlertService/
+   container_name: alertservice_docker
+   depends_on: 
+    mysqldb:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+    user-service:
+     condition: service_healthy
+   image: alertservice:latest
+   network_mode: host
+   ports: 
+    - 8020:8020
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  threshold-service:
+   build: threshhold-service/
+   container_name: threshold_docker
+   depends_on: 
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+   image: threshold:latest
+   network_mode: host
+   ports: 
+    - 8044:8044
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  processor-service:
+   build: processor-service/
+   container_name: processorservice_docker
+   depends_on: 
+    mysqldb:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+    influxdb:
+     condition: service_healthy
+   image: processorservice:latest
+   network_mode: host
+   ports: 
+    - 8033:8033
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  data-collector:
+   build: Data-Collector/
+   container_name: datacollector_docker
+   depends_on: 
+    kafkaservice:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+   image: datacollector:latest
+   network_mode: host
+   ports: 
+    - 8001:8001
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  monitoring-service:
+   build: monitoring-service/
+   container_name: monitoringservice_docker
+   depends_on: 
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+   image: monitoringservice:latest
+   network_mode: host
+   ports: 
+    - 8018:8018
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  login-service:
+   build: jwtauthentication/
+   container_name: login-service_docker
+   depends_on:
+    mysqldb:
+     condition: service_healthy
+    eurekaserver:
+     condition: service_healthy
+    apigateway:
+     condition: service_healthy
+    configserver:
+     condition: service_healthy
+    kafkaservice:
+     condition: service_healthy
+   image: loginservice:latest
+   network_mode: host
+   ports: 
+    - 8090:8090
+   restart: always
+   healthcheck:
+    test: "exit 0"
+    
+  frontend:
+   build: frontend-syscop/
+   container_name: frontend_docker
+   image: frontend:latest
+   container_name: frontend_docker
+   restart: always
+   network_mode: host
+   hostname: localhost
+   ports:
+    - 8004:8004
+   healthcheck:
+    test: "exit 0"
+    
+  kafkaservice:
+   image: landoop/fast-data-dev
+   container_name: kfka_docker
+   restart: always
+   network_mode: host
+   hostname: localhost
+   depends_on: 
+    eurekaserver:
+     condition: service_healthy
+   ports:
+    - 2181:2181
+    - 8030:8030
+    - 8081:8081
+    - 8084:8084
+    - 8083:8083
+    - 9092:9092
+   environment:
+    WEB_PORT: 8030
+    REST_PORT: 8084
+    BROKER_PORT: 9092
+    ZK_PORT: 2181
+    CONNECT_PORT: 8083
+    REGISTRY_PORT: 8081
+    ADV_HOST: localhost
+   healthcheck:
+    test: "exit 0"
+
+volumes:
+  data: ~
+

@@ -1,0 +1,67 @@
+<mat-toolbar color="primary">
+  <mat-toolbar-row>
+    <button type="button" aria-label="Toggle sidenav" mat-icon-button (click)="drawer.toggle()">
+      <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+    </button>
+    <span>SYSCOP</span>
+    <span class="example-spacer">
+    </span>
+    <span>
+      <button mat-icon-button [matMenuTriggerFor]="menu">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <p mat-menu-item> Welcome {{info.username}}</p>
+        <button mat-menu-item color="primary" (click)="logout()">
+          Logout
+        </button>
+      </mat-menu>
+    </span>
+  </mat-toolbar-row>
+</mat-toolbar>
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #drawer class="sidenav" fixedInViewport="!(isHandset$ | async)" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="!(isHandset$ | async)" fixedTopGap="56">
+    <mat-nav-list>
+      <a mat-list-item routerLink='appRegistration' routerLinkActive="active">
+        <span>
+          <mat-icon>assignment</mat-icon>
+        </span>
+        <span> Applications</span>
+      </a>
+      <a mat-list-item routerLink='dashboard' routerLinkActive="active">
+        <span>
+          <mat-icon>dashboard</mat-icon>
+        </span>
+        <span> Docker Dashboard </span>
+      </a>
+      <a mat-list-item routerLink="java" routerLinkActive="active">
+        <span>
+          <mat-icon>dashboard</mat-icon>
+        </span>
+        <span>Java Dashboard</span>
+      </a>
+      <a mat-list-item routerLink="data" routerLinkActive="active">
+        <span>
+          <mat-icon>trending_up</mat-icon>
+        </span>
+        <span>Historical Data</span>
+      </a>
+      <a mat-list-item routerLink='notifications' routerLinkActive="active">
+        <span>
+          <mat-icon  matBadgeColor="warn">notification_important</mat-icon>
+        </span>
+        <span>Notifications</span>
+      </a>
+
+
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-select>
+    <mat-option>
+    </mat-option>
+  </mat-select>
+  <mat-sidenav-content fixedTopGap="56">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
